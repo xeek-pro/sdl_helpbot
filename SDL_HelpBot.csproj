@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
@@ -9,6 +9,10 @@
     <Compile Remove="downloads\**" />
     <EmbeddedResource Remove="downloads\**" />
     <None Remove="downloads\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include=".github\workflows\dotnet-core.yml" />
   </ItemGroup>
 
   <ItemGroup>
