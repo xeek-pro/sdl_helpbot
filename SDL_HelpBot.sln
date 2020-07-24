@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30204.135
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDL_HelpBot", "SDL_HelpBot.csproj", "{7A81CB49-25DA-40E9-AB9E-4599CC27000E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7A81CB49-25DA-40E9-AB9E-4599CC27000E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A81CB49-25DA-40E9-AB9E-4599CC27000E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A81CB49-25DA-40E9-AB9E-4599CC27000E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A81CB49-25DA-40E9-AB9E-4599CC27000E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3BCF9FFD-FDD3-455C-8593-5D7F5EFC6160}
+	EndGlobalSection
+EndGlobal
