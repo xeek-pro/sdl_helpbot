@@ -75,9 +75,12 @@ namespace SDL_HelpBot.UnitTests
                 .AddSingleton<PictureService>()
                 .BuildServiceProvider();
 
-            Assert.DoesNotThrowAsync(() => services
-                .GetRequiredService<DiscordSocketClient>()
-                .LoginAsync(TokenType.Bot, DiscordToken), "Failed to login to Discord, is your token correct?");
+            DiscordSocketClient client = services.GetRequiredService<DiscordSocketClient>();
+            Assert.DoesNotThrowAsync(() => client.LoginAsync(TokenType.Bot, DiscordToken), 
+                "Failed to login to Discord, is your token correct?");
+
+            // Not that this matters in this specific test
+            client.StopAsync().GetAwaiter().GetResult();
         }
     }
 }

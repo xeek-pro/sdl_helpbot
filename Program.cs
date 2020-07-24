@@ -20,10 +20,29 @@ namespace SDL_HelpBot
     // - https://github.com/foxbot/patek - a more feature-filled bot, utilizing more aspects of the library
     class Program
     {
+        public static bool ShouldStop { get; set; }
+
         // There is no need to implement IDisposable like before as we are
         // using dependency injection, which handles calling Dispose for us.
-        static void Main(string[] args)
-            => new Program().MainAsync().GetAwaiter().GetResult();
+        static async Task Main(string[] args)
+        {
+            Console.WriteLine("Starting bot...");
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+            Task.Run(async () => {
+                Console.WriteLine("Press ESC to stop");
+                await new Program().MainAsync();
+            });
+#pragma warning restore CS4014
+
+            while (!(Console.KeyAvailable && Console.ReadKey(true).Key == ConsoleKey.Escape))
+            {
+                // Don't unnecessarily peg a CPU just to check for the key press:
+                await Task.Yield();
+            }
+
+            // Causes Program.MainAsync() to stop.
+            ShouldStop = true;
+        }
 
         public async Task MainAsync()
         {
@@ -31,28 +50,28 @@ namespace SDL_HelpBot
             // when you are finished using it, at the end of your app's lifetime.
             // If you use another dependency injection framework, you should inspect
             // its documentation for the best way to do this.
-            using (var services = ConfigureServices())
-            {
-                var client = services.GetRequiredService<DiscordSocketClient>();
+            using var services = ConfigureServices();
+            var client = services.GetRequiredService<DiscordSocketClient>();
 
-                client.Log += LogAsync;
-                services.GetRequiredService<CommandService>().Log += LogAsync;
+            client.Log += LogAsync;
+            services.GetRequiredService<CommandService>().Log += LogAsync;
 
-                // Tokens should be considered secret data and never hard-coded.
-                // We can read from the environment variable to avoid hardcoding.
-                await client.LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable("SDL_HELPBOT_DISCORDTOKEN"));
-                await client.StartAsync();
+            // Tokens should be considered secret data and never hard-coded.
+            // We can read from the environment variable to avoid hardcoding.
+            await client.LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable("SDL_HELPBOT_DISCORDTOKEN"));
+            await client.StartAsync();
 
-                // Here we initialize the logic required to register our commands.
-                await services.GetRequiredService<CommandHandlingService>().InitializeAsync();
+            // Here we initialize the logic required to register our commands.
+            await services.GetRequiredService<CommandHandlingService>().InitializeAsync();
 
-                await Task.Delay(Timeout.Infinite);
-            }
+            while (!ShouldStop) await Task.Yield();
+            client.StopAsync().GetAwaiter().GetResult();
         }
 
         private Task LogAsync(LogMessage log)
         {
             Console.WriteLine(log.ToString());
+            // TODO: Use NLog here
 
             return Task.CompletedTask;
         }

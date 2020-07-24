@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <GenerateProgramFile>false</GenerateProgramFile>
+    <UserSecretsId>11676403-e1f4-41bd-bddb-e23c5a903274</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
