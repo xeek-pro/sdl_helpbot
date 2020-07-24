@@ -19,6 +19,14 @@ namespace SDL_HelpBot.UnitTests
         }
 
         [Test]
+        public void CanIGetTheDiscordToken()
+        {
+            string token;
+            Assert.IsFalse(string.IsNullOrEmpty(token = Environment.GetEnvironmentVariable("SDL_HELPBOT_DISCORDTOKEN")));
+            Console.WriteLine($"Found Discord Token: {token}");
+        }
+
+        [Test]
         public void LoginToDiscord()
         {
             using var services = new ServiceCollection()
