@@ -2,7 +2,6 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.TestPlatform.TestHost;
 using NUnit.Framework;
 using SDL_HelpBot.Services;
 using System;
@@ -20,7 +19,7 @@ namespace SDL_HelpBot.UnitTests
         }
 
         [Test]
-        public async void LoginToDiscord()
+        public void LoginToDiscord()
         {
             using var services = new ServiceCollection()
                 .AddSingleton<DiscordSocketClient>()
@@ -32,8 +31,11 @@ namespace SDL_HelpBot.UnitTests
 
             //SDL_HELPBOT_DISCORDTOKEN: ${{ secrets.SDL_HELPBOT_DISCORDTOKEN }}
 
-            var client = services.GetRequiredService<DiscordSocketClient>();
-            await client.LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable("SDL_HELPBOT_DISCORDTOKEN"));
+            services
+                .GetRequiredService<DiscordSocketClient>()
+                .LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable("SDL_HELPBOT_DISCORDTOKEN"))
+                .GetAwaiter()
+                .GetResult();
         }
     }
 }
