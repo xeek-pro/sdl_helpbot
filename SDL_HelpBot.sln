@@ -3,7 +3,25 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30204.135
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDL_HelpBot", "SDL_HelpBot.csproj", "{7A81CB49-25DA-40E9-AB9E-4599CC27000E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SDL_HelpBot", "SDL_HelpBot\SDL_HelpBot.csproj", "{7A81CB49-25DA-40E9-AB9E-4599CC27000E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SDL_HelpBotLibrary", "SDL_HelpBotLibrary\SDL_HelpBotLibrary.csproj", "{A008F8C5-18C6-4B4F-9BF8-554B697B8EB1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{1204D794-9BB0-43D3-9023-222BFADAE82B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{8B247551-F308-483B-BF58-77A2CD795E9C}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\dotnet-core.yml = .github\workflows\dotnet-core.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "cache", "cache", "{BAE82DF1-D2B6-4228-A29C-8D4789CA9AB6}"
+	ProjectSection(SolutionItems) = preProject
+		cache\SDLWikiApiCacheFile.json = cache\SDLWikiApiCacheFile.json
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDL_HelpBotTests", "SDL_HelpBotTests\SDL_HelpBotTests.csproj", "{09FC466B-CAA8-4607-B222-AA05A73CE52F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SDL_WikiApiCacheViewer", "SDL_WikiApiCacheViewer\SDL_WikiApiCacheViewer.csproj", "{888DE8AE-FFE9-4CFA-9D81-861F0868747D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,9 +33,24 @@ Global
 		{7A81CB49-25DA-40E9-AB9E-4599CC27000E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7A81CB49-25DA-40E9-AB9E-4599CC27000E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7A81CB49-25DA-40E9-AB9E-4599CC27000E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A008F8C5-18C6-4B4F-9BF8-554B697B8EB1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A008F8C5-18C6-4B4F-9BF8-554B697B8EB1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A008F8C5-18C6-4B4F-9BF8-554B697B8EB1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A008F8C5-18C6-4B4F-9BF8-554B697B8EB1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09FC466B-CAA8-4607-B222-AA05A73CE52F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09FC466B-CAA8-4607-B222-AA05A73CE52F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09FC466B-CAA8-4607-B222-AA05A73CE52F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09FC466B-CAA8-4607-B222-AA05A73CE52F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{888DE8AE-FFE9-4CFA-9D81-861F0868747D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{888DE8AE-FFE9-4CFA-9D81-861F0868747D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{888DE8AE-FFE9-4CFA-9D81-861F0868747D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{888DE8AE-FFE9-4CFA-9D81-861F0868747D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8B247551-F308-483B-BF58-77A2CD795E9C} = {1204D794-9BB0-43D3-9023-222BFADAE82B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {3BCF9FFD-FDD3-455C-8593-5D7F5EFC6160}

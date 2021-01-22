@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
@@ -10,22 +12,12 @@ namespace SDL_HelpBot.Modules
     public class PublicModule : ModuleBase<SocketCommandContext>
     {
         // Dependency Injection will fill this value in for us
-        public PictureService PictureService { get; set; }
+        public SDLWikiService SDLWikiService { get; set; }
 
         [Command("ping")]
         [Alias("pong", "hello")]
         public Task PingAsync()
             => ReplyAsync("pong!");
-
-        [Command("cat")]
-        public async Task CatAsync()
-        {
-            // Get a stream containing an image of a cat
-            var stream = await PictureService.GetCatPictureAsync();
-            // Streams must be seeked to their beginning before being uploaded!
-            stream.Seek(0, SeekOrigin.Begin);
-            await Context.Channel.SendFileAsync(stream, "cat.png");
-        }
 
         // Get info on a user, or the user who invoked the command if one is not specified
         [Command("userinfo")]
@@ -65,5 +57,55 @@ namespace SDL_HelpBot.Modules
         [RequireContext(ContextType.Guild, ErrorMessage = "Sorry, this command must be ran from within a server, not a DM!")]
         public Task GuildOnlyCommand()
             => ReplyAsync("Nothing to see here!");
+
+        // [Remainder] takes the rest of the command's arguments as one argument, rather than splitting every space
+        [Command("wiki")]
+        public Task Wiki([Remainder] string text)
+        {
+            // Insert a ZWSP before the text to prevent triggering other bots!
+
+            if (SDLWikiService == null)
+            {
+                return ReplyAsync("\u200B" + "The internal SDLWikiService did not get created");
+            }
+            else
+            {
+                var replySections = SDLWikiService.GetReply(text);
+                if(replySections == null && replySections.Count > 0) return ReplyAsync('\u200B' + "The document could not be found or the website is down");
+                else
+                {
+                    int fieldCount = 0;
+                    var embedFields = new List<EmbedFieldBuilder>();
+                    foreach(var section in replySections)
+                    {
+                        if (fieldCount >= 25) break;
+
+                        string fieldName = fieldCount == 0 ? "Summary" : section.Key;
+                        if (fieldName.Length > 1024)
+                        {
+                            fieldName = fieldName.Substring(0, 256 - "...".Length) + "...";
+                        }
+
+                        string fieldValue = section.Value;
+                        if(fieldValue.Length > 1024)
+                        {
+                            fieldValue = fieldValue.Substring(0, 1024 - "...".Length) + "...";
+                        }
+
+                        embedFields.Add(new EmbedFieldBuilder()
+                            .WithName(fieldName)
+                            .WithValue(fieldValue));
+
+                        fieldCount++;
+                    }
+
+                    var embedBuilder = new EmbedBuilder()
+                        .WithTitle(replySections.First().Key)
+                        .WithFields(embedFields);
+
+                    return ReplyAsync(embed: embedBuilder.Build());
+                }
+            }
+        }
     }
 }

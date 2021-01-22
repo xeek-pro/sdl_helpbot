@@ -1,18 +1,21 @@
 ﻿using System;
 using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Discord;
 using Discord.WebSocket;
 using Discord.Commands;
 using SDL_HelpBot.Services;
+using SDL_HelpBot.Modules;
+using SDL_HelpBot.Interfaces;
+using NLog;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 
 namespace SDL_HelpBot
 {
-    // This is a minimal example of using Discord.Net's command
-    // framework - by no means does it show everything the framework
-    // is capable of.
+    // This is a minimal example of using Discord.Net's command framework - by no means does it show everything the 
+    // framework is capable of.
     //
     // You can find samples of using the command framework:
     // - Here, under the 02_commands_framework sample
@@ -21,9 +24,12 @@ namespace SDL_HelpBot
     class Program
     {
         public static bool ShouldStop { get; set; }
+        private Logger _logger = LogManager.GetLogger(nameof(SDLWikiApiRepository));
+        private Logger _loggerDiscord = LogManager.GetLogger("Discord");
+        private IConfiguration _config;
 
-        // There is no need to implement IDisposable like before as we are
-        // using dependency injection, which handles calling Dispose for us.
+        // There is no need to implement IDisposable like before as we are using dependency injection, which handles 
+        // calling Dispose for us.
         static async Task Main(string[] args)
         {
             Console.WriteLine("Starting bot...");
@@ -46,12 +52,18 @@ namespace SDL_HelpBot
 
         public async Task MainAsync()
         {
-            // You should dispose a service provider created using ASP.NET
-            // when you are finished using it, at the end of your app's lifetime.
-            // If you use another dependency injection framework, you should inspect
-            // its documentation for the best way to do this.
+            var builder = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", true, true);
+            _config = builder.Build();
+
+            // You should dispose a service provider created using ASP.NET when you are finished using it, at the end 
+            // of your app's lifetime. If you use another dependency injection framework, you should inspect its 
+            // documentation for the best way to do this.
             using var services = ConfigureServices();
             var client = services.GetRequiredService<DiscordSocketClient>();
+
+            // Get the wiki api cache service going:
+            var wikiRepoService = services.GetRequiredService<ISDLWikiApiRepository>();
 
             client.Log += LogAsync;
             services.GetRequiredService<CommandService>().Log += LogAsync;
@@ -68,22 +80,22 @@ namespace SDL_HelpBot
             client.StopAsync().GetAwaiter().GetResult();
         }
 
-        private Task LogAsync(LogMessage log)
+        private Task LogAsync(LogMessage logMessage)
         {
-            Console.WriteLine(log.ToString());
-            // TODO: Use NLog here
-
+            _loggerDiscord.Info(logMessage.Message);
             return Task.CompletedTask;
         }
 
         private ServiceProvider ConfigureServices()
         {
             return new ServiceCollection()
+                .AddSingleton(provider => _config)
                 .AddSingleton<DiscordSocketClient>()
                 .AddSingleton<CommandService>()
                 .AddSingleton<CommandHandlingService>()
                 .AddSingleton<HttpClient>()
-                .AddSingleton<PictureService>()
+                .AddSingleton<ISDLWikiApiRepository, SDLWikiApiRepository>()
+                .AddSingleton<SDLWikiService>()
                 .BuildServiceProvider();
         }
     }

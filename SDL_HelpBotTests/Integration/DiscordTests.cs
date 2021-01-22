@@ -5,12 +5,16 @@ using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 using SDL_HelpBot.Services;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
+using Humanizer;
+using System.Reflection.Metadata.Ecma335;
 
-namespace SDL_HelpBot.UnitTests
+namespace SDL_HelpBotTests.Integration
 {
     [TestFixture]
-    public class StandardTests
+    public class DiscordTests
     {
         private const string DiscordTokenEnvName = "SDL_HELPBOT_DISCORDTOKEN";
         private string DiscordToken { get; set; }
@@ -72,7 +76,7 @@ namespace SDL_HelpBot.UnitTests
                 .AddSingleton<CommandService>()
                 .AddSingleton<CommandHandlingService>()
                 .AddSingleton<HttpClient>()
-                .AddSingleton<PictureService>()
+                .AddSingleton<SDLWikiService>()
                 .BuildServiceProvider();
 
             DiscordSocketClient client = services.GetRequiredService<DiscordSocketClient>();
