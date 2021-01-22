@@ -9,37 +9,39 @@ namespace SDL_HelpBotLibrary.Parsers
     public static class MoinMoinToDiscordExtensions
     {
         private const string CATEGORY_SEPARATOR = "----";
+        private const string CODEBLOCK_PREFIX = "{{{";
+        private const string CODEBLOCK_SUFFIX = "}}}";
+        private const string CODEBLOCK_LANGUAGE_KEYWORD = "#!highlight";
+        private const string DISCORD_CODEBLOCK_WRAPPER = "```";
+        private const string LINK_PREFIX = "[[";
+        private const string LINK_SUFFIX = "]]";
 
-        private struct TextUnit
+        private static string DetectLineEnding(this string text)
         {
-            public TextUnit(string text, bool ignore = false)
-            {
-                Text = text;
-                Ignore = ignore;
-            }
-
-            public string Text { get; }
-            public bool Ignore { get; }
+            return text.Any(x => x == '\r') ? "\r\n" : "\n";
         }
 
-        private static List<(string Part, bool Ignore)> SeparateIntoPartsBasedOnIgnoredRanges(string text)
+        private static List<(string Part, bool Ignore)> SeparateIntoPartsBasedOnIgnoredRanges(string text, List<Range> ranges)
         {
-            const string codeBlockPrefix = "{{{";
-            const string codeBlockSuffix = "}}}";
-            var codeBlockMatches = Regex.Matches(text, $@"{Regex.Escape(codeBlockPrefix)}([^{Regex.Escape(codeBlockSuffix)}]*){Regex.Escape(codeBlockSuffix)}");
+            if(ranges == default || !ranges.Any())
+            {
+                return new List<(string Part, bool Ignore)>() { (text, false) };
+            }
 
             var textParts = new List<(string Part, bool Ignore)>();
-            string part = string.Empty;
+            StringBuilder partBuilder = new StringBuilder();
             bool lastIgnore = false;
+
             for (int n = 0; n < text.Length; n++)
             {
-                part += text[n];
-                bool ignore = codeBlockMatches.Any(match => n >= match.Index && n <= match.Index + match.Length);
+                partBuilder.Append(text[n]);
 
-                if (ignore != lastIgnore || n == text.Length - 1)
+                bool ignore = ranges.Any(range => n >= range.Start.Value && n <= range.End.Value);
+
+                if (lastIgnore != ignore || n == text.Length - 1)
                 {
-                    textParts.Add((part, lastIgnore));
-                    part = string.Empty;
+                    textParts.Add((partBuilder.ToString(), lastIgnore));
+                    partBuilder.Clear();
                 }
 
                 lastIgnore = ignore;
@@ -48,25 +50,29 @@ namespace SDL_HelpBotLibrary.Parsers
             return textParts;
         }
 
-        public static string RemoveMoinMoinMacros(this string text)
+        public static string RemoveMoinMoinMacros(this string text, List<Range> ignoreRanges = default)
         {
-            var textParts = SeparateIntoPartsBasedOnIgnoredRanges(text);
-
-            return string.Join(null, textParts.Select(x =>
-                !x.Ignore ?
-                Regex.Replace(x.Part, @"<<([^>>]*)>>", string.Empty) :
-                x.Part
-            ));
+            if (ignoreRanges != default)
+            {
+                var textParts = SeparateIntoPartsBasedOnIgnoredRanges(text, ignoreRanges);
+                return string.Join(null, textParts.Select(x => x.Ignore ? x.Part : x.Part.RemoveMoinMoinMacros()));
+            }
+            else
+            {
+                return Regex.Replace(text, @"<<([^>>]*)>>", string.Empty);
+            }
         }
 
-        public static string GenerateEmojis(this string text)
+        public static string GenerateEmojis(this string text, List<Range> ignoreRanges = default)
         {
-
-            var textParts = SeparateIntoPartsBasedOnIgnoredRanges(text);
-
-            return string.Join(null, textParts.Select(x =>
-                !x.Ignore ?
-                x.Part
+            if (ignoreRanges != default)
+            {
+                var textParts = SeparateIntoPartsBasedOnIgnoredRanges(text, ignoreRanges);
+                return string.Join(null, textParts.Select(x => x.Ignore ? x.Part : x.Part.GenerateEmojis()));
+            }
+            else
+            {
+                return text
                     .Replace(@"X -(", ":angry:")
                     .Replace(@":(", ":frowning:")
                     .Replace(@";)", ":wink:")
@@ -82,68 +88,58 @@ namespace SDL_HelpBotLibrary.Parsers
                     .Replace(@"(!)", ":bulb:")
                     .Replace(@"{o}", ":star:")
                     .Replace(@"<!>", ":bangbang:")
-                    .Replace(@"/!\", ":warning:") 
-                : x.Part
-            ));
+                    .Replace(@"/!\", ":warning:");
+            }
         }
 
         public static string GenerateDiscordCodeBlocks(this string text) => GenerateDiscordCodeBlocks(text, out _);
 
-        public static string GenerateDiscordCodeBlocks(this string text, out List<Range> foundRanges)
+        public static string GenerateDiscordCodeBlocks(this string text, out List<Range> rangesAfterFormatting)
         {
-            foundRanges = new List<Range>();
-            //<<([^>>]*)>>
+            rangesAfterFormatting = new List<Range>();
 
-            // Syntax Highlighting:
-            const string prefix = "{{{";
-            const string suffix = "}}}";
-            const string languageCommand = "#!highlight";
-            const string codeBlockWrap = "```";
-            string detectedLineEnding = text.Any(x => x == '\r') ? "\r\n" : "\n";
+            var prefixRegex = new Regex(@$"(?={CODEBLOCK_PREFIX})");
+            var suffixRegex = new Regex(@$"(?<={CODEBLOCK_SUFFIX})");
 
-            int current_pos = 0, prefix_pos = 0, suffix_pos = 0;
-            while ((current_pos = text.IndexOf(prefix, current_pos)) != -1)
+            var blocks = 
+                prefixRegex.Split(text)
+                .Select(x => suffixRegex.Split(x, 2))
+                .SelectMany(x => x);
+
+            StringBuilder result = new StringBuilder();
+            int currentPosition = 0;
+            foreach (var block in blocks)
             {
-                prefix_pos = current_pos;
-                if ((suffix_pos = text.IndexOf(suffix, prefix_pos + prefix.Length)) != -1)
+                string formattedText = block;
+
+                if(block.StartsWith(CODEBLOCK_PREFIX) && block.EndsWith(CODEBLOCK_SUFFIX))
                 {
-                    foundRanges.Add(prefix_pos..suffix_pos);
-                    current_pos = suffix_pos + suffix.Length;
-                }
-                else break;
-            }
+                    string highlightLanguage = string.Empty;
+                    formattedText = block.Replace(CODEBLOCK_PREFIX, "").Replace(CODEBLOCK_SUFFIX, "").Trim();
 
-            var matches = Regex.Matches(text, $@"{Regex.Escape(prefix)}([^{Regex.Escape(suffix)}]*){Regex.Escape(suffix)}", RegexOptions.Multiline | RegexOptions.ECMAScript);
-            foreach(Match match in matches.Reverse()) // Going in reverse to preserve index locations
-            {
-                if (match.Groups.Count < 2) continue;
+                    // Get the syntax highlighting language if it exists:
+                    var codeBlockSplit = formattedText.Split(null, 3);
+                    if (codeBlockSplit.Length > 2 && string.Compare(codeBlockSplit[0], CODEBLOCK_LANGUAGE_KEYWORD, ignoreCase: true) == 0)
+                    {
+                        highlightLanguage = codeBlockSplit[1];
+                        formattedText = codeBlockSplit[2];
+                    }
 
-                // Remember the match range and group value:
-                var foundRange = new Range(match.Index, match.Index + match.Length);
-                var textBlock = match.Groups[1].Value;
+                    formattedText = formattedText.Replace($"{CODEBLOCK_LANGUAGE_KEYWORD} {highlightLanguage}", "", ignoreCase: true, null).Trim();
+                    formattedText = 
+                        $"{DISCORD_CODEBLOCK_WRAPPER}{highlightLanguage.ToLower()}" + Environment.NewLine + 
+                        $"{formattedText}" + Environment.NewLine +
+                        $"{DISCORD_CODEBLOCK_WRAPPER}";
 
-                // Get the language if there is one:
-                string language = default;
-                if(textBlock.StartsWith(languageCommand))
-                {
-                    var highlightSyntax = textBlock.Split(separator: null, count: 3);
-                    if (highlightSyntax.Length > 1) language = highlightSyntax[1];
-                    else language = string.Empty;
+                    rangesAfterFormatting.Add(currentPosition..(currentPosition + formattedText.Length));
                     
-                    textBlock = textBlock.Replace(languageCommand, "").TrimStart();
-                    textBlock = textBlock[language.Length..].TrimStart();
                 }
 
-                textBlock = $"{codeBlockWrap}{(language != default ? language + detectedLineEnding : "")}{textBlock}{codeBlockWrap}";
-                var textBefore = text[..foundRange.Start];
-                var textAfter = text[(foundRange.End.Value)..];
-
-                foundRanges.Add(new Range(textBefore.Length, textBefore.Length + textBlock.Length));
-
-                text = textBefore + textBlock + textAfter;
+                result.Append(formattedText);
+                currentPosition = result.Length;
             }
 
-            return text;
+            return result.ToString();
         }
 
         public static string GenerateDiscordTables(this string text)
@@ -191,50 +187,60 @@ namespace SDL_HelpBotLibrary.Parsers
             return text;
         }
 
-        public static string GenerateDiscordLinks(this string text, string defaultBaseUrl) 
-            => GenerateDiscordLinks(text, defaultBaseUrl == default ? default : new Uri(defaultBaseUrl, UriKind.Absolute));
+        public static string GenerateDiscordLinks(this string text, string defaultBaseUrl, List<Range> ignoreRanges = default) 
+            => GenerateDiscordLinks(text, defaultBaseUrl == default ? default : new Uri(defaultBaseUrl, UriKind.Absolute), ignoreRanges);
 
-        public static string GenerateDiscordLinks(this string text, Uri defaultBaseUri = default)
+        public static string GenerateDiscordLinks(this string text, Uri defaultBaseUri = default, List<Range> ignoreRanges = default)
         {
-            string prefix = Regex.Escape("[[");
-            string suffix = Regex.Escape("]]").Replace("]", "\\]"); // Regex.Escape doesn't escape ] as it should
-
-            var matches = Regex.Matches(text, $@"{prefix}([^{suffix}]*){suffix}");
-            foreach (Match match in matches.Reverse()) // Going in reverse to preserve index locations
+            if (ignoreRanges != default)
             {
-                var foundRange = new Range(match.Index, match.Index + match.Length);
-                var originalText = match.Value;
-                var formattedMatchValue = match.Value.Replace("[[", string.Empty).Replace("]]", "");
-                var parts = formattedMatchValue.Split(new char[] { '|' }, 2);
-                var link = parts[0];
-                var linkText = parts.Length > 1 ? parts[1] : parts[0];
+                var textParts = SeparateIntoPartsBasedOnIgnoredRanges(text, ignoreRanges);
+                return string.Join(null, textParts.Select(x => x.Ignore ? x.Part : x.Part.GenerateDiscordLinks(defaultBaseUri)));
+            }
+            else
+            {
+                string prefix = Regex.Escape(LINK_PREFIX);
+                string suffix = Regex.Escape(LINK_SUFFIX).Replace("]", "\\]"); // Regex.Escape doesn't escape ] as it should
 
-                // First try to assume it's a fully qualified URI:
-                if (!Uri.TryCreate(link, UriKind.Absolute, out Uri uri))
+                var matches = Regex.Matches(text, $@"{prefix}([^{suffix}]*){suffix}");
+                foreach (Match match in matches.Reverse()) // Going in reverse to preserve index locations
                 {
-                    // Or assume it's a relative URI:
-                    if(defaultBaseUri != default) Uri.TryCreate(defaultBaseUri, link, out uri);
+                    var foundRange = new Range(match.Index, match.Index + match.Length);
+                    var originalText = match.Value;
+                    var formattedMatchValue = match.Value.Replace(LINK_PREFIX, string.Empty).Replace(LINK_SUFFIX, "");
+                    var parts = formattedMatchValue.Split(new char[] { '|' }, 2);
+                    var link = parts[0];
+                    var linkText = parts.Length > 1 ? parts[1] : parts[0];
+
+                    // First try to assume it's a fully qualified URI:
+                    if (!Uri.TryCreate(link, UriKind.Absolute, out Uri uri))
+                    {
+                        // Or assume it's a relative URI:
+                        if (defaultBaseUri != default) Uri.TryCreate(defaultBaseUri, link, out uri);
+                    }
+
+                    string replacement = uri == default ? linkText : $"[{linkText}]({uri})";
+                    var textBefore = text[..foundRange.Start].TrimEnd('.'); // Sometimes links start with a . but discord doesn't support bulleted lists
+                    var textAfter = text[(foundRange.End.Value)..];
+
+                    text = textBefore + replacement + textAfter;
                 }
 
-                string replacement = uri == default ? linkText : $"[{linkText}]({uri})";
-                var textBefore = text[..foundRange.Start].TrimEnd('.'); // Sometimes links start with a . but discord doesn't support bulleted lists
-                var textAfter = text[(foundRange.End.Value)..];
-
-                text = textBefore + replacement + textAfter;
+                return text;
             }
-
-            return text;
         }
 
-        public static string GenerateBoldAndItalicText(this string text)
+        public static string GenerateBoldAndItalicText(this string text, List<Range> ignoreRanges = default)
         {
-            var textParts = SeparateIntoPartsBasedOnIgnoredRanges(text);
-
-            return string.Join(null, textParts.Select(x =>
-                !x.Ignore ?
-                x.Part.Replace("'''", "**").Replace("''", "_") :
-                x.Part
-            ));
+            if (ignoreRanges != default)
+            {
+                var textParts = SeparateIntoPartsBasedOnIgnoredRanges(text, ignoreRanges);
+                return string.Join(null, textParts.Select(x => x.Ignore ? x.Part : x.Part.GenerateBoldAndItalicText()));
+            }
+            else
+            {
+                return text.Replace("'''", "**").Replace("''", "_");
+            }
         }
 
         public static Dictionary<string, string> SplitMoinMoinSections(this string text, bool includeCategories = true)

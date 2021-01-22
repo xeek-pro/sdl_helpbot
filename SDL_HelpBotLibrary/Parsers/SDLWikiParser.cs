@@ -1,12 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net;
-using System.Text;
-using System.Text.RegularExpressions;
-using HtmlAgilityPack;
-using SDL_HelpBotLibrary.SDLWikiApi;
 
 namespace SDL_HelpBotLibrary.Parsers
 {
@@ -49,13 +43,15 @@ namespace SDL_HelpBotLibrary.Parsers
 
         public string ConvertToMarkup(string document)
         {
+            List<Range> ignoreCodeBlockRanges;
+
             return document
-                .RemoveMoinMoinMacros()
                 .GenerateDiscordTables()
-                .GenerateDiscordCodeBlocks()
-                .GenerateEmojis()
-                .GenerateDiscordLinks(HostUri)
-                .GenerateBoldAndItalicText();
+                .GenerateDiscordCodeBlocks(out ignoreCodeBlockRanges)
+                .RemoveMoinMoinMacros(ignoreCodeBlockRanges)
+                .GenerateEmojis(ignoreCodeBlockRanges)
+                .GenerateDiscordLinks(HostUri, ignoreCodeBlockRanges)
+                .GenerateBoldAndItalicText(ignoreCodeBlockRanges);
         }
     }
 }
