@@ -20,7 +20,8 @@ namespace SDL_HelpBotTests.Integration
                 .AddInMemoryCollection(new Dictionary<string, string>
                 {
                     {"SDLWikiApiCacheFile", "SDLWikiApiCacheFile.json"},
-                    {"SDLWikiHostUrl", "https://wiki.libsdl.org/"}
+                    {"SDLWikiHostUrl", "https://wiki.libsdl.org/"},
+                    {"AutomaticallyUpdateCache", "false"}
                 })
                 .Build();
 
