@@ -11,6 +11,7 @@ using System.Net.Http;
 using Humanizer;
 using System.Reflection.Metadata.Ecma335;
 using SDL_HelpBotLibrary.Parsers;
+using SDL_HelpBotLibrary.Extensions;
 
 namespace SDL_HelpBotTests.Unit
 {

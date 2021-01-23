@@ -82,7 +82,19 @@ namespace SDL_HelpBot
 
         private Task LogAsync(LogMessage logMessage)
         {
-            _loggerDiscord.Info(logMessage.Message);
+            LogLevel convertedLogLevel = LogLevel.Info;
+            switch(logMessage.Severity)
+            {
+                case LogSeverity.Critical: convertedLogLevel = LogLevel.Fatal; break;
+                case LogSeverity.Debug: convertedLogLevel = LogLevel.Debug; break;
+                case LogSeverity.Error: convertedLogLevel = LogLevel.Error; break;
+                case LogSeverity.Info: convertedLogLevel = LogLevel.Info; break;
+                case LogSeverity.Verbose: convertedLogLevel = LogLevel.Debug; break;
+                case LogSeverity.Warning: convertedLogLevel = LogLevel.Warn; break;
+            }
+
+            _loggerDiscord.Log(convertedLogLevel, logMessage.Exception, logMessage.Message);
+
             return Task.CompletedTask;
         }
 

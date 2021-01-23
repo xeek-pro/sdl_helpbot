@@ -61,6 +61,38 @@ namespace SDL_HelpBot.Services
             _webClient.Dispose();
         }
 
+        public HashSet<SDLWikiApiItem> SearchForWikiItems(string query)
+        {
+            if (Lookups.Any())
+            {
+                var nameQueries = query.Split(null);
+                var partialMatches = Lookups.Keys.Where(key =>
+                {
+                    foreach(var nameQuery in nameQueries)
+                    {
+                        if (key.ToLowerInvariant().Contains(nameQuery.ToLowerInvariant()))
+                            return true;
+                    }
+
+                    return false;
+                });
+
+                var results = partialMatches
+                    .Select(match =>
+                    {
+                        try { return GetWikiItem(match, out _); }
+                        catch { return null; }
+                    })
+                    .Where(item => item != null);
+
+                return results.ToHashSet();
+            }
+            else
+            {
+                return new HashSet<SDLWikiApiItem>();
+            }
+        }
+
         public SDLWikiApiItem GetWikiItem(string name, out string errorMessage)
         {
             if(!Cache.TryGetItem(name, out SDLWikiApiItem item) || DateTime.Now - item.LastUpdate >= SDLWikiApiItem.Expiration)

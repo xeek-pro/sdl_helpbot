@@ -1,6 +1,9 @@
-﻿using System;
+﻿using SDL_HelpBotLibrary.Tools;
+using SDL_HelpBotLibrary.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using static SDL_HelpBotLibrary.Extensions.MoinMoinToDiscordExtensions;
 
 namespace SDL_HelpBotLibrary.Parsers
 {
@@ -19,6 +22,20 @@ namespace SDL_HelpBotLibrary.Parsers
             if (convertToMarkup) document = ConvertToMarkup(document);
             var sections = document.SplitMoinMoinSections();
             return sections;
+        }
+
+        public string ParseSummary(string document, bool convertToMarkup = true)
+        {
+            document = CleanUpDocument(document);
+            var sections = document.SplitMoinMoinSections();
+
+            if (sections.Any())
+            {
+                if (convertToMarkup) return ConvertToMarkup(sections.First().Value);
+                else return sections.First().Value;
+            }
+
+            return null;
         }
 
         private static string CleanUpDocument(string document)
@@ -43,15 +60,22 @@ namespace SDL_HelpBotLibrary.Parsers
 
         public string ConvertToMarkup(string document)
         {
-            List<Range> ignoreCodeBlockRanges;
+            document = string.Join(null, document
+                    .GenerateDiscordCodeBlocks(out var codeBlockRanges)
+                    // Enabling the ignoring of code blocks for further parsing:
+                    .SeparateIntoPartsFromRanges(codeBlockRanges)
+                    .GenerateDiscordTables(DiscordLimits.DISCORD_MAX_FIELD_VALUE_LENGTH - 25)
+                    .RemoveMoinMoinMacros()
+                    .GenerateEmojis()
+                    .GenerateDiscordLinks(HostUri)
+                    .GenerateBoldAndItalicText()
+                    // Sometimes this causes issues, an example is SDL_!CreateWindow and I'm unsure why it's there.
+                    .ReplaceWeirdStuff(("_!", "_"))
+                    // Transform back into a collection of strings:
+                    .Select(x => x.Part)
+                );
 
-            return document
-                .GenerateDiscordTables()
-                .GenerateDiscordCodeBlocks(out ignoreCodeBlockRanges)
-                .RemoveMoinMoinMacros(ignoreCodeBlockRanges)
-                .GenerateEmojis(ignoreCodeBlockRanges)
-                .GenerateDiscordLinks(HostUri, ignoreCodeBlockRanges)
-                .GenerateBoldAndItalicText(ignoreCodeBlockRanges);
+            return document;
         }
     }
 }
