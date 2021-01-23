@@ -17,7 +17,7 @@ namespace SDL_HelpBot.Services
     public class SDLWikiApiRepository : ISDLWikiApiRepository
     {
         public SDLWikiApiCache Cache { get; private set; } = new SDLWikiApiCache();
-        public Dictionary<string, Uri> Lookups { get; } = new Dictionary<string, Uri>();
+        public virtual Dictionary<string, Uri> Lookups { get; private set; } = new Dictionary<string, Uri>();
         public Uri HostUri { get; private set; }
         public string CacheFile { get; private set; }
         public bool EnableAutomaticUpdate { get; set; } = false;
@@ -26,14 +26,16 @@ namespace SDL_HelpBot.Services
         private readonly IConfiguration _config;
         private static readonly WebClient _webClient = new WebClient();
 
-        public SDLWikiApiRepository(IConfiguration config)
+        public SDLWikiApiRepository(IConfiguration config, bool updateLookups = true)
         {
             _logger.Info("Starting SDL Wiki API Repository Service");
 
             _config = config;
-            _webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36");
+            EnableAutomaticUpdate = bool.Parse(_config["AutomaticallyUpdateCache"]);
             CacheFile = _config["SDLWikiApiCacheFile"];
             HostUri = new Uri(_config["SDLWikiHostUrl"]);
+
+            _webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36");
 
             try
             {
@@ -46,7 +48,7 @@ namespace SDL_HelpBot.Services
             }
 
             // Update Lookups:
-            UpdateLookups();
+            if(updateLookups) UpdateLookups();
 
             if (!EnableAutomaticUpdate)
             {
@@ -61,26 +63,40 @@ namespace SDL_HelpBot.Services
             _webClient.Dispose();
         }
 
-        public HashSet<SDLWikiApiItem> SearchForWikiItems(string query)
+        public HashSet<(string Name, Uri uri)> Search(string query)
         {
             if (Lookups.Any())
             {
                 var nameQueries = query.Split(null);
-                var partialMatches = Lookups.Keys.Where(key =>
+                var partialMatches = Lookups.Where(kv =>
                 {
-                    foreach(var nameQuery in nameQueries)
+                    foreach (var nameQuery in nameQueries)
                     {
-                        if (key.ToLowerInvariant().Contains(nameQuery.ToLowerInvariant()))
+                        if (kv.Key.ToLowerInvariant().Contains(nameQuery.ToLowerInvariant()))
                             return true;
                     }
 
                     return false;
                 });
 
-                var results = partialMatches
+                return partialMatches.Select(kv => (kv.Key, kv.Value)).ToHashSet();
+            }
+            else
+            {
+                return new HashSet<(string Name, Uri uri)>();
+            }
+        }
+
+        public HashSet<SDLWikiApiItem> SearchForWikiItems(string query)
+        {
+            if (Lookups.Any())
+            {
+                var matches = Search(query);
+
+                var results = matches
                     .Select(match =>
                     {
-                        try { return GetWikiItem(match, out _); }
+                        try { return GetWikiItem(match.Name, out _); }
                         catch { return null; }
                     })
                     .Where(item => item != null);

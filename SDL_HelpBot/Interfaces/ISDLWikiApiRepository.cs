@@ -11,6 +11,7 @@ namespace SDL_HelpBot.Interfaces
         Uri HostUri { get; }
         string CacheFile { get; }
         bool EnableAutomaticUpdate { get; set; }
+        HashSet<(string Name, Uri uri)> Search(string query);
         HashSet<SDLWikiApiItem> SearchForWikiItems(string nameQuery);
         SDLWikiApiItem GetWikiItem(string name, out string errorMessage);
         void Import(string filePath);

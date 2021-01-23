@@ -1,24 +1,14 @@
-﻿using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
-using Microsoft.Extensions.DependencyInjection;
-using NUnit.Framework;
-using SDL_HelpBot.Services;
+﻿using NUnit.Framework;
+using SDL_HelpBotLibrary.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http;
-using Humanizer;
-using System.Reflection.Metadata.Ecma335;
-using SDL_HelpBotLibrary.Parsers;
-using SDL_HelpBotLibrary.Extensions;
 
 namespace SDL_HelpBotTests.Unit
 {
     [TestFixture]
     public class MoinMoinToDiscordTests
     {
-
         [SetUp]
         public void SetUp()
         {
@@ -187,36 +177,6 @@ namespace SDL_HelpBotTests.Unit
                 "The '''category''' can be one of:" + Environment.NewLine + Environment.NewLine;
 
             var result = text.RemoveMoinMoinMacros();
-
-            Assert.AreEqual(expectedResult, result);
-        }
-
-        [Test]
-        public void RemoveMoinMoinMacrosWithIgnoredRanges()
-        {
-            string codeSection =
-                "== Syntax ==" + Environment.NewLine +
-                "{{{#!highlight cpp" + Environment.NewLine +
-                "void SDL_LogCritical(int         category," + Environment.NewLine +
-                "                     const char* fmt," + Environment.NewLine +
-                "                     <<test>>...)" + Environment.NewLine +
-                "}}}" + Environment.NewLine;
-
-            string remarksSection =
-                "== Remarks ==" + Environment.NewLine +
-                "<<Anchor(category)>>" + Environment.NewLine +
-                "The '''category''' can be one of:" + Environment.NewLine +
-                "<<Include(SDL_LOG_CATEGORY, , , from=\" == Values == \", to=\" == Code Examples == \")>>" + Environment.NewLine;
-
-            string text = codeSection + Environment.NewLine + remarksSection;
-
-            string expectedResult =
-                codeSection.GenerateDiscordCodeBlocks() + Environment.NewLine +
-                "== Remarks ==" + Environment.NewLine + Environment.NewLine +
-                "The '''category''' can be one of:" + Environment.NewLine + Environment.NewLine;
-
-            List<Range> ignoreRanges;
-            var result = text.GenerateDiscordCodeBlocks(out ignoreRanges).RemoveMoinMoinMacros(ignoreRanges);
 
             Assert.AreEqual(expectedResult, result);
         }

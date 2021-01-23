@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using static SDL_HelpBotLibrary.Extensions.MoinMoinToDiscordExtensions;
+using System.Text.RegularExpressions;
 
 namespace SDL_HelpBotLibrary.Parsers
 {
@@ -52,8 +53,8 @@ namespace SDL_HelpBotLibrary.Parsers
             // Remove empty starting lines:
             lines = lines.SkipWhile(x => string.IsNullOrWhiteSpace(x));
 
-            // Remove XML tags:
-            //lines = lines.Select(x => Regex.Replace(x, "<.*?>", string.Empty));
+            // Remove XML-like tags:
+            lines = lines.Select(x => Regex.Replace(x, "<<.*?>>", string.Empty));
 
             return string.Join(Environment.NewLine, lines);
         }
