@@ -5,12 +5,34 @@
     <GenerateProgramFile>true</GenerateProgramFile>
     <UserSecretsId>11676403-e1f4-41bd-bddb-e23c5a903274</UserSecretsId>
     <OutputType>Exe</OutputType>
+    <Platforms>AnyCPU;x64</Platforms>
+    <Version>2.0.0</Version>
+    <Authors>Xeek#8773</Authors>
+    <Company>SDL_Enthusiasts</Company>
+    <Copyright>Copyright © 2021 Xeek</Copyright>
+    <PackageProjectUrl>https://github.com/xeek-pro/sdl_helpbot</PackageProjectUrl>
+    <PackageIcon>avatar_large.png</PackageIcon>
+    <RepositoryUrl>https://github.com/xeek-pro/sdl_helpbot</RepositoryUrl>
+    <RepositoryType>Github</RepositoryType>
+    <NeutralLanguage>en</NeutralLanguage>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="appsettings.json" />
     <None Remove="NLog.config" />
     <None Remove="SDLWikiApiCacheFile.json" />
+    <None Include="Images\avatar_large.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

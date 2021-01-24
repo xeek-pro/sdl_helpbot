@@ -133,9 +133,15 @@ namespace SDL_HelpBot.Services
             var embedBuilder = new EmbedBuilder()
                 .WithTitle($"Searched for '{message.LimitLength(20)}'")
                 .WithDescription(description)
-                .WithFields(embedFields);
+                .WithFields(embedFields)
+                .WithFooter(GenerateFooter(), iconUrl: "https://raw.githubusercontent.com/xeek-pro/sdl_helpbot/master/SDL_HelpBot/Images/stamp_sm.png");
 
             return embedBuilder.Build();
+        }
+
+        private static string GenerateFooter()
+        {
+            return $"{typeof(Program).Assembly.GetName().Name} | Version: {typeof(Program).Assembly.GetName().Version} | Author: Xeek#8773";
         }
     }
 }
