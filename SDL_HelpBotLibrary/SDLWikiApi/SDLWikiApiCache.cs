@@ -8,14 +8,21 @@ namespace SDL_HelpBotLibrary.SDLWikiApi
 {
     public class SDLWikiApiCache
     {
-        [JsonProperty] 
-        private ConcurrentDictionary<string, SDLWikiApiItem> Cache { get; set; } = new ConcurrentDictionary<string, SDLWikiApiItem>();
+        [JsonProperty]
+        private HashSet<SDLWikiApiItem> Cache // Only for serialization!
+        {
+            get => CacheDictionary.Select(kv => kv.Value).ToHashSet();
+            set => value.ToDictionary(x => x.Name, x => x);
+        }
 
-        [JsonProperty] 
+        [JsonProperty]
         public DateTime LastUpdate { get; private set; } = new DateTime();
 
+        [JsonIgnore]
+        private ConcurrentDictionary<string, SDLWikiApiItem> CacheDictionary { get; set; } = new ConcurrentDictionary<string, SDLWikiApiItem>();
+
         [JsonIgnore] 
-        public int Count => Cache.Count;
+        public int Count => CacheDictionary.Count;
 
         public static TimeSpan Expiration { get; set; } = TimeSpan.FromDays(30);
 
@@ -29,7 +36,7 @@ namespace SDL_HelpBotLibrary.SDLWikiApi
         {
             if (cache != default)
             {
-                Cache = new ConcurrentDictionary<string, SDLWikiApiItem>(cache.ToDictionary(x => x.Name, x => x));
+                CacheDictionary = new ConcurrentDictionary<string, SDLWikiApiItem>(cache.ToDictionary(x => x.Name, x => x));
             }
 
             LastUpdate = lastUpdate ?? DateTime.Now;
@@ -37,7 +44,7 @@ namespace SDL_HelpBotLibrary.SDLWikiApi
 
         public void AddOrUpdate(SDLWikiApiItem item)
         {
-            Cache.AddOrUpdate(item.Name, item, (k, v) => item);
+            CacheDictionary.AddOrUpdate(item.Name, item, (k, v) => item);
             LastUpdate = DateTime.Now;
         }
 
@@ -56,7 +63,7 @@ namespace SDL_HelpBotLibrary.SDLWikiApi
             }
             set
             {
-                if (Cache.ContainsKey(name))
+                if (CacheDictionary.ContainsKey(name))
                 {
                     AddOrUpdate(value);
                 }
@@ -69,12 +76,12 @@ namespace SDL_HelpBotLibrary.SDLWikiApi
 
         public bool TryGetItem(string name, out SDLWikiApiItem item)
         {
-            return Cache.TryGetValue(name, out item);
+            return CacheDictionary.TryGetValue(name, out item);
         }
 
         public IEnumerable<SDLWikiApiItem> Enumerate()
         {
-            foreach (var kv in Cache)
+            foreach (var kv in CacheDictionary)
             {
                 yield return kv.Value;
             }

@@ -64,7 +64,7 @@ namespace SDL_HelpBot.Services
                     }
 
                     embedFields.Add(new EmbedFieldBuilder()
-                        .WithName(fieldName)
+                        .WithName(string.IsNullOrWhiteSpace(fieldName) ? "\u200b" : fieldName)
                         .WithValue(fieldValue));
 
                     fieldCount++;
@@ -74,7 +74,12 @@ namespace SDL_HelpBot.Services
                     .WithTitle(replyDict.First().Key)
                     .WithUrl(wikiItem.Uri.AbsoluteUri)
                     .WithDescription(replyDict.First().Value)
-                    .WithFields(embedFields);
+                    .WithFields(embedFields)
+                    .WithFooter(
+                        (wikiItem.Live ? "Using Live Documentation" : $"Using Cached Documentation, Last Update: {wikiItem.LastUpdate:MMM dd, yyyy H:mm:ss zzz}") +
+                        Environment.NewLine + GenerateFooter(), 
+                        iconUrl: "https://raw.githubusercontent.com/xeek-pro/sdl_helpbot/master/SDL_HelpBot/Images/xeekworx.png")
+                    .WithThumbnailUrl("https://raw.githubusercontent.com/xeek-pro/sdl_helpbot/master/SDL_HelpBot/Images/stamp_lg.png");
 
                 return embedBuilder.Build();
             }
@@ -134,14 +139,15 @@ namespace SDL_HelpBot.Services
                 .WithTitle($"Searched for '{message.LimitLength(20)}'")
                 .WithDescription(description)
                 .WithFields(embedFields)
-                .WithFooter(GenerateFooter(), iconUrl: "https://raw.githubusercontent.com/xeek-pro/sdl_helpbot/master/SDL_HelpBot/Images/stamp_sm.png");
+                .WithFooter(GenerateFooter(), iconUrl: "https://raw.githubusercontent.com/xeek-pro/sdl_helpbot/master/SDL_HelpBot/Images/xeekworx.png")
+                .WithThumbnailUrl("https://raw.githubusercontent.com/xeek-pro/sdl_helpbot/master/SDL_HelpBot/Images/stamp_lg.png");
 
             return embedBuilder.Build();
         }
 
         private static string GenerateFooter()
         {
-            return $"{typeof(Program).Assembly.GetName().Name} | Version: {typeof(Program).Assembly.GetName().Version} | Author: Xeek#8773";
+            return $"{typeof(Program).Assembly.GetName().Name}  |  Version: {typeof(Program).Assembly.GetName().Version}  |  Author: Xeek#8773";
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using NLog;
+﻿using Newtonsoft.Json;
+using NLog;
 using Polly;
 using SDL_HelpBotLibrary.Tools;
 using System;
@@ -21,6 +22,7 @@ namespace SDL_HelpBotLibrary.SDLWikiApi
         public DateTime LastUpdate { get; set; }
         public static TimeSpan Expiration { get; set; } = TimeSpan.FromDays(30);
         public string RawText { get; set; }
+        [JsonIgnore] public bool Live { get; set; } // A serialized version of this object isn't considered live
 
         public SDLWikiApiItem(string name = default, Uri uri = default)
         {

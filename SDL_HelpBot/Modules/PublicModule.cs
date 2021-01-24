@@ -14,29 +14,25 @@ namespace SDL_HelpBot.Modules
         // Dependency Injection will fill this value in for us
         public SDLWikiService SDLWikiService { get; set; }
 
-        [Command("ping")]
-        [Alias("pong", "hello")]
+        [Command("wikiping")]
+        [Alias("wikihello")]
         public Task PingAsync() => ReplyAsync("pong!");
 
         // Get info on a user, or the user who invoked the command if one is not specified
-        [Command("userinfo")]
-        public async Task UserInfoAsync(IUser user = null)
-        {
-            user ??= Context.User;
+        //[Command("userinfo")]
+        //public async Task UserInfoAsync(IUser user = null)
+        //{
+        //    user ??= Context.User;
 
-            await ReplyAsync(user.ToString());
-        }
-
-        // 'params' will parse space-separated elements into a list
-        [Command("list")]
-        public Task ListAsync(params string[] objects) => ReplyAsync("You listed: " + string.Join("; ", objects));
+        //    await ReplyAsync(user.ToString());
+        //}
 
         // Setting a custom ErrorMessage property will help clarify the precondition error
         [Command("guild_only")]
         [RequireContext(ContextType.Guild, ErrorMessage = "Sorry, this command must be ran from within a server, not a DM!")]
         public Task GuildOnlyCommand() => ReplyAsync("Nothing to see here!");
 
-        [Command("wiki")]   
+        [Command("wiki2")]   
         public Task Wiki([Remainder] string text)
         {
             // Insert a ZWSP before the text to prevent triggering other bots!

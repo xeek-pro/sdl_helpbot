@@ -32,14 +32,14 @@ namespace SDL_HelpBot.Services
 
             _config = config;
             EnableAutomaticUpdate = bool.Parse(_config["AutomaticallyUpdateCache"]);
-            CacheFile = _config["SDLWikiApiCacheFile"];
+            CacheFile = System.IO.Path.GetFullPath(_config["SDLWikiApiCacheFile"] == default ? $"{nameof(SDLWikiApiCache)}.json" : _config["SDLWikiApiCacheFile"]);
             HostUri = new Uri(_config["SDLWikiHostUrl"]);
 
             _webClient.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36");
 
             try
             {
-                Import(CacheFile == default ? $"{nameof(SDLWikiApiCache)}.json" : CacheFile);
+                Import(CacheFile);
                 _logger.Info($"Loaded the cache containing {Cache.Count} items");
             }
             catch (Exception ex)
@@ -65,21 +65,19 @@ namespace SDL_HelpBot.Services
 
         public HashSet<(string Name, Uri uri)> Search(string query)
         {
-            if (Lookups.Any())
+            if (Lookups.Any() && !string.IsNullOrWhiteSpace(query))
             {
                 var nameQueries = query.Split(null);
-                var partialMatches = Lookups.Where(kv =>
-                {
-                    foreach (var nameQuery in nameQueries)
-                    {
-                        if (kv.Key.ToLowerInvariant().Contains(nameQuery.ToLowerInvariant()))
-                            return true;
-                    }
+                IEnumerable<KeyValuePair<string, Uri>> matches = null;
 
-                    return false;
-                });
+                // Exact match:
+                matches = Lookups.Where(kv => nameQueries.Any(q => kv.Key.Equals(q)));
+                // Case sensitive:
+                if (!matches.Any()) matches = Lookups.Where(kv => nameQueries.Any(q => kv.Key.Contains(q)));
+                // Case insensitive:
+                if (!matches.Any()) matches = Lookups.Where(kv => nameQueries.Any(q => kv.Key.ToLowerInvariant().Contains(q.ToLowerInvariant())));
 
-                return partialMatches.Select(kv => (kv.Key, kv.Value)).ToHashSet();
+                return matches.Select(kv => (kv.Key, kv.Value)).ToHashSet();
             }
             else
             {
@@ -116,17 +114,8 @@ namespace SDL_HelpBot.Services
                 // Maybe the casing is wrong, or maybe there's a partial match:
                 if (Lookups.Any())
                 {
-                    var foundCaseInsensitive = Lookups.Keys.FirstOrDefault(key => string.Compare(key, name, ignoreCase: true) == 0);
-                    if(foundCaseInsensitive != default)
-                    {
-                        return GetWikiItem(foundCaseInsensitive, out errorMessage);
-                    }
-
-                    var foundPartial = Lookups.Keys.FirstOrDefault(key => key.ToLowerInvariant().Contains(name.ToLowerInvariant()));
-                    if (foundPartial != default)
-                    {
-                        return GetWikiItem(foundPartial, out errorMessage);
-                    }
+                    var match = Search(name).FirstOrDefault();
+                    if (match != default && match.Name != name) return GetWikiItem(match.Name, out errorMessage);
                 }
 
                 // Don't hammer the website:
@@ -155,16 +144,23 @@ namespace SDL_HelpBot.Services
 
                 // The page should not be valid HTML since ?action=raw should return MoinMoin markup:
                 var htmlDoc = new HtmlDocument();
-                htmlDoc.Load(documentRawText);
+                htmlDoc.LoadHtml(documentRawText);
                 if(!htmlDoc.ParseErrors.Any())
                 {
                     errorMessage = $"Couldn't receive the correct document because the content was in HTML rather than Markup";
                     return null;
                 }
 
-                item = new SDLWikiApiItem(name);
+                item = new SDLWikiApiItem(name, new Uri(HostUri, name));
                 item.Update(documentRawText);
+                item.Live = true;
                 Cache.AddOrUpdate(item);
+                Export(CacheFile);
+            }
+            else
+            {
+                // Pulled directly from cache:
+                if (item != null) item.Live = false;
             }
 
             errorMessage = string.Empty;
